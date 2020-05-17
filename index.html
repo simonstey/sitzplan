@@ -99,11 +99,251 @@
         }
       }
     </style>
+    <link
+      rel="stylesheet"
+      href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css"
+      integrity="sha384-9aIt2nRpC12Uk9gS9baDl411NQApFmC26EwAOH8WgZl5MYYxFfc+NcPb1dKGj7Sk"
+      crossorigin="anonymous"
+    />
+    <script
+      src="https://code.jquery.com/jquery-3.5.1.slim.min.js"
+      integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj"
+      crossorigin="anonymous"
+    ></script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js"
+      integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo"
+      crossorigin="anonymous"
+    ></script>
+    <script
+      src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/js/bootstrap.min.js"
+      integrity="sha384-OgVRvuATP1z7JjHLkuOU7Xw704+h835Lr+6QL9UvYjZE3Ipu6Tp75j7Bh/kR0JKI"
+      crossorigin="anonymous"
+    ></script>
 
     <script src="release/go.js"></script>
+
+    <script src="js/vendor/qrcode.min.js"></script>
     <!-- <script src="assets/js/goSamples.js"></script> -->
     <!-- this is only for the GoJS Samples framework -->
+    <script src="https://cdn.jsdelivr.net/npm/copy-to-clipboard@3.3.1/example/index.js"></script>
     <script src="assets/require.js"></script>
+
+    <script>
+      /* TinyURL JS API
+  @author: Ephellon Dantzler
+  @timestamp: Sunday August 13, 2017 02:04:32 CST (-06:00)
+*/
+      // JavaScript Emulation from "1.8.5" to "1.3"
+
+      // C -> XRequest
+
+      function ProperURL__String(url) {
+        if (ProperURL.test(url)) return new URL(url);
+        try {
+          // Missing protocol
+          if (/([\w]+)\.([\w]+)(\/.+)?$/i.test(url))
+            return new URL("http://" + RegExp.$_);
+        } catch (error) {
+          throw new URIError("Failed to construct 'URL': Invalid URL");
+        }
+      }
+
+      ProperURL.test = function test(url) {
+        try {
+          new URL(url);
+        } catch (error) {
+          return false;
+        }
+        return true;
+      };
+
+      function tinyurl__Object_Function(options, callback) {
+        var head = "https://www.tinyurl.com/api-create.php?url=",
+          url = head + encodeURIComponent(options.url),
+          start,
+          end,
+          count,
+          fetching,
+          timeout = options.timeout;
+        tinyurl.callback = callback;
+
+        if (timeout != undefined && timeout != null) {
+          start = new Date().getTime();
+          XRequest(options, callback);
+          for (
+            count = 0, end = start + timeout * 1000, fetching = true;
+            fetching && count < end;
+            count = new Date().getTime()
+          )
+            fetching = XRequest.status == undefined || XRequest.status == null;
+          end = count;
+
+          XRequest.request = { start: start, end: end, span: end - start };
+        } else {
+          XRequest({ url: url, method: options.method || "GET" }, callback);
+        }
+      }
+
+      function tinyurl__Object(options) {
+        if (options.callback != undefined && options.callback != null)
+          return tinyurl(options, options.callback);
+        if (options.success != undefined && options.success != null)
+          return tinyurl(options, options.success);
+        return tinyurl(options, function () {});
+      }
+
+      function tinyurl__String_Object(url, options) {
+        if (ProperURL.test(url)) return tinyurl(new URL(url), options);
+        else return tinyurl(ProperURL(url), options);
+      }
+
+      function tinyurl__String_Function(url, callback) {
+        if (ProperURL.test(url))
+          return tinyurl(new URL(url), { method: "GET", callback: callback });
+        else
+          return tinyurl(ProperURL(url), { method: "GET", callback: callback });
+      }
+
+      function tinyurl__String(url) {
+        return tinyurl(url, { method: "GET" });
+      }
+
+      function tinyurl__URL(url) {
+        return tinyurl({ method: "GET", url: url.href });
+      }
+
+      function tinyurl__URL_Object(url, options) {
+        return tinyurl(Object.assign({ url: url.href }, options));
+      }
+
+      tinyurl.toString = function toString(url, options) {
+        if (url != undefined && url != null)
+          return tinyurl.apply(null, arguments);
+        return tinyurl.url;
+      };
+
+      // https://robwu.nl/cors-anywhere.html
+      var updateURLInterval;
+
+      function XRequest(options, callback) {
+        var API_URL = "https://cors-anywhere.herokuapp.com/",
+          XHR = new XMLHttpRequest();
+        XHR.open(options.method, API_URL + options.url);
+        XHR.onload = function () {
+          var args = arguments;
+          return setTimeout(function () {
+            return callback.apply(null, args);
+          }, 100);
+        };
+        XHR.onerror = options.error;
+
+        if (/^POST/i.test(options.method))
+          XHR.setRequestHeader(
+            "Content-Type",
+            "application/x-www-form-urlencoded"
+          );
+
+        try {
+          XRequest.request = XHR;
+          updateURLInterval = setInterval(function () {
+            tinyurl.preview = (tinyurl.url =
+              XRequest.request.responseText || "").replace(
+              /\:\/\/(w+\.)?/,
+              "://$1preview."
+            );
+            if (tinyurl.url != "") clearInterval(updateURLInterval);
+          }, 1);
+          XHR.send();
+        } catch (error) {
+          XHR.onerror.apply(null, error);
+        }
+      }
+
+      function ProperURL() {
+        var index = 0,
+          args = arguments,
+          types = Types.apply(null, arguments).split(","),
+          check = Types.check,
+          oftype = Types.oftype;
+        switch (types + "") {
+          case "String" + "":
+            return ProperURL__String.apply(null, args);
+            break;
+          default:
+            throw TypeError("ProperURL(" + types + ") is undefined");
+            break;
+        }
+      }
+
+      function tinyurl() {
+        var index = 0,
+          args = arguments,
+          types = Types.apply(null, arguments).split(","),
+          check = Types.check,
+          oftype = Types.oftype;
+        switch (types + "") {
+          case "URL,Object" + "":
+            return tinyurl__URL_Object.apply(null, args);
+            break;
+          case "URL" + "":
+            return tinyurl__URL.apply(null, args);
+            break;
+          case "String,Object" + "":
+            return tinyurl__String_Object.apply(null, args);
+            break;
+          case "String,Function" + "":
+            return tinyurl__String_Function.apply(null, args);
+            break;
+          case "String" + "":
+            return tinyurl__String.apply(null, args);
+            break;
+          case "Object,Function" + "":
+            return tinyurl__Object_Function.apply(null, args);
+            break;
+          case "Object" + "":
+            return tinyurl__Object.apply(null, args);
+            break;
+          default:
+            throw TypeError("tinyurl(" + types + ") is undefined");
+            break;
+        }
+      }
+
+      window.tinyurl = tinyurl;
+
+      function Types() {
+        for (
+          var index = 0, results = [], args = [].slice.call(arguments), arg;
+          index < args.length;
+          index++
+        )
+          if (
+            (arg = args[index]) != undefined &&
+            arg != null &&
+            arg.constructor == Function &&
+            arg.name != undefined &&
+            arg.name != null &&
+            arg.name != ""
+          )
+            results.push(arg.name);
+          else if (arg != undefined && arg != null)
+            results.push(arg.constructor.name);
+          else results.push(typeof arg);
+        return results.join(",");
+      }
+      Types.check = function (a, b) {
+        var c = RegExp("^(\\b" + a + "\\b,?)+$").test(b),
+          d = c
+            ? RegExp.$_
+            : b.replace(RegExp("^(\\b" + a + "\\b,?)+"), "").split(","),
+          i = (check.failIndex = c ? -1 : (b = b.split(",")).length - d.length);
+        return (check.fail = c ? "" : b.slice(i, b.length) + ""), c;
+      };
+      Types.oftype = function (a, b) {
+        return check(a, b + "") ? b : b.slice(0, (index = check.failIndex));
+      };
+    </script>
     <script id="code">
       var head = document.getElementsByTagName("head")[0];
 
@@ -124,6 +364,36 @@
       link.rel = "stylesheet";
       link.href = "assets/css/main.css";
       head.appendChild(link);
+      function jsonToUri(v, r, s) {
+        return encodeURIComponent(
+          JSON.stringify(v, r, s)
+            .replace(/[()'~_!*]/g, function (c) {
+              // Replace ()'~_!* with \u0000 escape sequences
+              return "\\u" + ("0000" + c.charCodeAt(0).toString(16)).slice(-4);
+            })
+            .replace(/\{/g, "(") //    { -> (
+            .replace(/\}/g, ")") //    } -> )
+            .replace(/"/g, "'") //    " -> '
+            .replace(/\:/g, "~") //    : -> ~
+            .replace(/,/g, "_") //    , -> _
+            .replace(/\[/g, "!") //    [ -> !
+            .replace(/\]/g, "*") //    ] -> *
+        );
+      }
+
+      function uriToJson(t, r) {
+        return JSON.parse(
+          decodeURIComponent(t)
+            .replace(/\(/g, "{") //    ( -> {
+            .replace(/\)/g, "}") //    ) -> }
+            .replace(/'/g, '"') //    ' -> "
+            .replace(/~/g, ":") //    ~ -> :
+            .replace(/_/g, ",") //    _ -> ,
+            .replace(/\!/g, "[") //    ! -> [
+            .replace(/\*/g, "]"), //    * -> ]
+          r
+        );
+      }
 
       function init() {
         //  if (window.goSamples) goSamples(); // init for these samples -- you don't need to call this
@@ -161,9 +431,13 @@
           // For this sample, automatically show the state of the diagram's model on the page
           ModelChanged: function (e) {
             if (e.isTransactionFinished) {
-              document.getElementById(
-                "mySavedModel"
-              ).textContent = myDiagram.model.toJson();
+              document.getElementById("mySavedModel").value =
+                '{\n "plan": ' +
+                myDiagram.model.toJson() +
+                ",\n" +
+                '"students":' +
+                myGuests.model.toJson() +
+                "}";
             }
           },
           "undoManager.isEnabled": true,
@@ -180,68 +454,68 @@
             if (idx >= 0) document.title = document.title.substr(0, idx);
           }
         });
-        myDiagram.nodeTemplate.contextMenu = $(
-          "ContextMenu",
-          $("ContextMenuButton", $(go.TextBlock, "Bigger"), {
-            click: function (e, obj) {
-              changeTextSize(obj, 1.1);
-            },
-          }),
-          $("ContextMenuButton", $(go.TextBlock, "Smaller"), {
-            click: function (e, obj) {
-              changeTextSize(obj, 1 / 1.1);
-            },
-          }),
-          $("ContextMenuButton", $(go.TextBlock, "Create 1x2 Table"), {
-            click: function (e, obj) {
-              e.diagram.toolManager.clickCreatingTool.insertPart(
-                e.documentPoint,
-                "TableR3"
-              );
-            },
-          }),
-          $("ContextMenuButton", $(go.TextBlock, "Create 2x2 Table"), {
-            click: function (e, obj) {
-              e.diagram.toolManager.clickCreatingTool.insertPart(
-                e.documentPoint,
-                "BlockTable2x2"
-              );
-            },
-          }),
-          $("ContextMenuButton", $(go.TextBlock, "Bold/Normal"), {
-            click: function (e, obj) {
-              toggleTextWeight(obj);
-            },
-          }),
-          $("ContextMenuButton", $(go.TextBlock, "Copy"), {
-            click: function (e, obj) {
-              e.diagram.commandHandler.copySelection();
-            },
-          }),
-          $("ContextMenuButton", $(go.TextBlock, "Delete"), {
-            click: function (e, obj) {
-              e.diagram.commandHandler.deleteSelection();
-            },
-          }),
-          $("ContextMenuButton", $(go.TextBlock, "Undo"), {
-            click: function (e, obj) {
-              e.diagram.commandHandler.undo();
-            },
-          }),
-          $("ContextMenuButton", $(go.TextBlock, "Redo"), {
-            click: function (e, obj) {
-              e.diagram.commandHandler.redo();
-            },
-          }),
-          $("ContextMenuButton", $(go.TextBlock, "Layout"), {
-            click: function (e, obj) {
-              var adorn = obj.part;
-              adorn.diagram.startTransaction("Subtree Layout");
-              layoutTree(adorn.adornedPart);
-              adorn.diagram.commitTransaction("Subtree Layout");
-            },
-          })
-        );
+        // myDiagram.nodeTemplate.contextMenu = $(
+        //   "ContextMenu",
+        //   $("ContextMenuButton", $(go.TextBlock, "Bigger"), {
+        //     click: function (e, obj) {
+        //       changeTextSize(obj, 1.1);
+        //     },
+        //   }),
+        //   $("ContextMenuButton", $(go.TextBlock, "Smaller"), {
+        //     click: function (e, obj) {
+        //       changeTextSize(obj, 1 / 1.1);
+        //     },
+        //   }),
+        //   $("ContextMenuButton", $(go.TextBlock, "Create 1x2 Table"), {
+        //     click: function (e, obj) {
+        //       e.diagram.toolManager.clickCreatingTool.insertPart(
+        //         e.documentPoint,
+        //         "TableR3"
+        //       );
+        //     },
+        //   }),
+        //   $("ContextMenuButton", $(go.TextBlock, "Create 2x2 Table"), {
+        //     click: function (e, obj) {
+        //       e.diagram.toolManager.clickCreatingTool.insertPart(
+        //         e.documentPoint,
+        //         "BlockTable2x2"
+        //       );
+        //     },
+        //   }),
+        //   $("ContextMenuButton", $(go.TextBlock, "Bold/Normal"), {
+        //     click: function (e, obj) {
+        //       toggleTextWeight(obj);
+        //     },
+        //   }),
+        //   $("ContextMenuButton", $(go.TextBlock, "Copy"), {
+        //     click: function (e, obj) {
+        //       e.diagram.commandHandler.copySelection();
+        //     },
+        //   }),
+        //   $("ContextMenuButton", $(go.TextBlock, "Delete"), {
+        //     click: function (e, obj) {
+        //       e.diagram.commandHandler.deleteSelection();
+        //     },
+        //   }),
+        //   $("ContextMenuButton", $(go.TextBlock, "Undo"), {
+        //     click: function (e, obj) {
+        //       e.diagram.commandHandler.undo();
+        //     },
+        //   }),
+        //   $("ContextMenuButton", $(go.TextBlock, "Redo"), {
+        //     click: function (e, obj) {
+        //       e.diagram.commandHandler.redo();
+        //     },
+        //   }),
+        //   $("ContextMenuButton", $(go.TextBlock, "Layout"), {
+        //     click: function (e, obj) {
+        //       var adorn = obj.part;
+        //       adorn.diagram.startTransaction("Subtree Layout");
+        //       layoutTree(adorn.adornedPart);
+        //       adorn.diagram.commitTransaction("Subtree Layout");
+        //     },
+        //   })
+        // );
         // the Diagram's context menu just displays commands for general functionality
         myDiagram.contextMenu = $(
           "ContextMenu",
@@ -337,10 +611,49 @@
             ),
             new go.Binding("text", "name"),
             {
+              // define a context menu for each node
+              contextMenu: $(
+                "ContextMenu", // that has one button
+                $("ContextMenuButton", $(go.TextBlock, "Gruppe A"), {
+                  click: function (e, obj) {
+                    // changeColor(e, obj, "A");
+                    changeColor2(myGuests, "A");
+                    changeColor2(myDiagram, "A");
+                  },
+                  // click: function (e, obj) {
+                  //   e.diagram.commandHandler.deleteSelection();
+                  // },
+                }),
+                $("ContextMenuButton", $(go.TextBlock, "Gruppe B"), {
+                  click: function (e, obj) {
+                    // changeColor(e, obj, "B");
+                    changeColor2(myGuests, "B");
+                    changeColor2(myDiagram, "B");
+                  },
+                  // click: function (e, obj) {
+                  //   e.diagram.commandHandler.deleteSelection();
+                  // },
+                }),
+                $("ContextMenuButton", $(go.TextBlock, "Abgemeldet"), {
+                  click: function (e, obj) {
+                    // console.log("e", e);
+                    // console.log("obj", obj);
+                    toggleAnwesenheit(myGuests);
+                    toggleAnwesenheit(myDiagram);
+                    // changeColor(e, obj, "0");
+                  },
+                  // click: function (e, obj) {
+                  //   e.diagram.commandHandler.deleteSelection();
+                  // },
+                })
+                // more ContextMenuButtons would go here
+              ), // end Adornment,
               // what to do when a drag-over or a drag-drop occurs on a Node representing a table
               mouseDragEnter: function (e, node, prev) {
+                console.log("dragCopy ", dragCopy);
                 var dragCopy =
                   node.diagram.toolManager.draggingTool.copiedParts; // could be copied from palette
+                console.log("dragCopy ", dragCopy);
                 highlightSeats(
                   node,
                   dragCopy ? dragCopy : node.diagram.selection,
@@ -364,7 +677,14 @@
                 );
               },
             },
-            $(go.Shape, "Rectangle", { fill: "blanchedalmond", stroke: null }),
+            $(
+              go.Shape,
+              "Rectangle",
+              new go.Binding("fill", "color", function (s) {
+                console.log(s);
+                return s ? s : "red";
+              })
+            ),
             $(
               go.Panel,
               "Viewbox",
@@ -373,7 +693,7 @@
                 go.TextBlock,
                 {
                   name: "NAMETB",
-                  margin: 2,
+                  margin: 1,
                   desiredSize: new go.Size(55, NaN),
                   font: "8pt Verdana, sans-serif",
                   textAlign: "center",
@@ -388,6 +708,50 @@
                 //   return s;
                 // }).makeTwoWay()
               )
+            ),
+            $(
+              go.TextBlock,
+              {
+                background: "transparent",
+                name: "STATUS_Student",
+                margin: 2,
+                font: "8pt Verdana, sans-serif",
+                alignment: go.Spot.TopRight,
+                alignmentFocus: go.Spot.TopRight,
+              },
+              new go.Binding("text", "gruppe")
+            ),
+            $(
+              go.Panel,
+              "Spot",
+              { desiredSize: new go.Size(50, 38) },
+              new go.Binding("opacity", "ribbon", function (t) {
+                return t ? 1 : 0;
+              }),
+              // note that the opacity defaults to zero (not visible),
+              // in case there is no "ribbon" property
+              {
+                opacity: 0,
+                alignment: new go.Spot(1, 0, 5, -5),
+                alignmentFocus: go.Spot.TopRight,
+              },
+              $(
+                go.Shape, // the ribbon itself
+                {
+                  geometryString: "F1 M0 0 L30 0 70 40 70 70z",
+                  fill: "red",
+                  stroke: null,
+                  strokeWidth: 0,
+                }
+              ),
+              $(go.TextBlock, "FEHLT", {
+                alignment: new go.Spot(1, 0, -19, 17), //-29, 29),
+                angle: 38,
+                maxSize: new go.Size(40, NaN),
+                stroke: "white",
+                font: "bold 8px sans-serif",
+                textAlign: "center",
+              })
             )
           )
         );
@@ -420,7 +784,8 @@
             ),
             $(
               go.TextBlock,
-              number.toString(),
+              // number.toString(),
+              "frei",
               { font: "10pt Verdana, sans-serif" },
               new go.Binding("angle", "angle", function (n) {
                 return -n;
@@ -445,6 +810,7 @@
               mouseDragEnter: function (e, node, prev) {
                 var dragCopy =
                   node.diagram.toolManager.draggingTool.copiedParts; // could be copied from palette
+                console.log("dragCopy2 ", dragCopy);
                 highlightSeats(
                   node,
                   dragCopy ? dragCopy : node.diagram.selection,
@@ -771,9 +1137,13 @@
             // For this sample, automatically show the state of the diagram's model on the page
             ModelChanged: function (e) {
               if (e.isTransactionFinished) {
-                document.getElementById(
-                  "savedModel2"
-                ).textContent = myGuests.model.toJson();
+                document.getElementById("mySavedModel").value =
+                  '{\n "plan": ' +
+                  myDiagram.model.toJson() +
+                  ",\n" +
+                  '"students":' +
+                  myGuests.model.toJson() +
+                  "}";
               }
             },
             layout: $(go.GridLayout, {
@@ -787,32 +1157,49 @@
         myGuests.nodeTemplateMap = myDiagram.nodeTemplateMap;
 
         // specify the contents of the Palette
-        myGuests.model = new go.GraphLinksModel([
-          { name: "Amin" },
-          { name: "Mehrab" }, // dragons, of course
-          { name: "Andrej" },
-          { name: "Ebrar" },
-          { name: "Ivan" },
-          { name: "Kübra" },
-          { name: "Marha" },
-          { name: "Magomed" },
-          { name: "Melike" },
-          { name: "Mihai" },
-          { name: "Szanella" },
-          { name: "Dejana" }, // dragons, of course
-          { name: "Belmin" },
-          { name: "Mirjana" },
-          { name: "Iliyan" },
-          { name: "Amine" },
-          { name: "Ivona" },
-          { name: "Hamza" },
-          { name: "Ionuts" },
-          { name: "Berin" },
-          { name: "Mateja" },
-          { name: "Abu" },
-          { name: "Hamsat" },
-          { name: "Rufa" },
-        ]);
+
+        let studentlist = [
+          { name: "Amin", gruppe: "A" },
+          { name: "Mehrab", gruppe: "A" }, // dragons, of course
+          { name: "Andrej", gruppe: "A" },
+          { name: "Ebrar", gruppe: "A" },
+          { name: "Ivan", gruppe: "A" },
+          { name: "Kübra", gruppe: "A" },
+          { name: "Marha", gruppe: "A" },
+          { name: "Magomed", gruppe: "A" },
+          { name: "Melike", gruppe: "A" },
+          { name: "Mihai", gruppe: "A" },
+          { name: "Szanella", gruppe: "A" },
+          { name: "Dejana", gruppe: "A" }, // dragons, of course
+          { name: "Belmin", gruppe: "B" },
+          { name: "Mirjana", gruppe: "B" },
+          { name: "Iliyan", gruppe: "B" },
+          { name: "Amine", gruppe: "B" },
+          { name: "Ivona", gruppe: "B" },
+          { name: "Hamza", gruppe: "B" },
+          { name: "Ionuts", gruppe: "B" },
+          { name: "Berin", gruppe: "B" },
+          { name: "Mateja", gruppe: "B" },
+          { name: "Abu", gruppe: "B", ribbon: true },
+          { name: "Hamsat", gruppe: "B" },
+          { name: "Rufa", gruppe: "B" },
+        ];
+
+        studentlist.forEach((item) => {
+          switch (item.gruppe) {
+            case "A":
+              item.color = "lightyellow";
+              break;
+            case "B":
+              item.color = "lightblue";
+              break;
+            default:
+              item.color = "white";
+              break;
+          }
+        });
+
+        myGuests.model = new go.GraphLinksModel(studentlist);
 
         myGuests.model.undoManager = myDiagram.model.undoManager; // shared UndoManager!
         // the context menu allows users to make a position vacant,
@@ -916,21 +1303,55 @@
         //   diagram.currentTool.stopTool();
         // }
 
+        function changeColor2(diagram, gruppe) {
+          // Always make changes in a transaction, except when initializing the diagram.
+          diagram.startTransaction("change color");
+          diagram.selection.each(function (node) {
+            if (node instanceof go.Node) {
+              // ignore any selected Links and simple Parts
+              // Examine and modify the data, not the Node directly.
+              var data = node.data;
+              let newcolor;
+              switch (gruppe) {
+                case "A":
+                  newcolor = "lightyellow";
+                  break;
+                case "B":
+                  newcolor = "lightblue";
+                  break;
+                default:
+                  newcolor = "white";
+                  break;
+              }
+              // Call setDataProperty to support undo/redo as well as
+              // automatically evaluating any relevant bindings.
+              diagram.model.setDataProperty(data, "color", newcolor);
+              diagram.model.setDataProperty(data, "gruppe", gruppe);
+            }
+          });
+          diagram.commitTransaction("change color");
+          diagram.clearSelection();
+        }
+        function toggleAnwesenheit(diagram) {
+          // Always make changes in a transaction, except when initializing the diagram.
+          diagram.startTransaction("change status");
+          diagram.selection.each(function (node) {
+            if (node instanceof go.Node) {
+              // ignore any selected Links and simple Parts
+              // Examine and modify the data, not the Node directly.
+              var data = node.data;
+              var model = diagram.model;
+
+              // Call setDataProperty to support undo/redo as well as
+              // automatically evaluating any relevant bindings.
+              diagram.model.setDataProperty(data, "ribbon", !data.ribbon);
+            }
+          });
+          diagram.commitTransaction("change status");
+          diagram.clearSelection();
+        }
+
         // // A custom command, for changing the color of the selected node(s).
-        // function changeColor(diagram, color) {
-        //   // Always make changes in a transaction, except when initializing the diagram.
-        //   diagram.startTransaction("change color");
-        //   diagram.selection.each(function (node) {
-        //     if (node instanceof go.Node) {
-        //       // ignore any selected Links and simple Parts
-        //       // Examine and modify the data, not the Node directly.
-        //       var data = node.data;
-        //       // Call setDataProperty to support undo/redo as well as
-        //       // automatically evaluating any relevant bindings.
-        //       diagram.model.setDataProperty(data, "color", color);
-        //     }
-        //   });
-        //   diagram.commitTransaction("change color");
 
         // To simulate a "move" from the Diagram back to the Palette, the source Node must be deleted.
         myGuests.addDiagramListener("ExternalObjectsDropped", function (e) {
@@ -951,6 +1372,23 @@
             if (isPerson(n)) unassignSeat(n.data);
           });
         });
+        const queryString = window.location.search;
+        console.log(queryString);
+
+        const urlParams = new URLSearchParams(queryString);
+        if (urlParams.has("config")) {
+          let saved_plan = uriToJson(urlParams.get("config"));
+          console.log(saved_plan);
+          myDiagram.model = go.Model.fromJson(JSON.stringify(saved_plan.plan));
+          myGuests.model = go.Model.fromJson(
+            JSON.stringify(saved_plan.students)
+          );
+        }
+        history.pushState(
+          {},
+          null,
+          window.location.href.replace(window.location.search, "")
+        );
       } // end init
 
       function isPerson(n) {
@@ -1035,6 +1473,8 @@
       // Also handles cases where the guest represents multiple people, because guest.plus > 0.
       // This tries to assign the unoccupied seat that is closest to the given point in document coordinates.
       function assignSeat(node, guest, pt) {
+        console.log("guest", guest);
+        console.log("node", node);
         if (isPerson(node)) {
           // refer to the person's table instead
           node = node.diagram.findNodeForKey(node.data.table);
@@ -1174,6 +1614,7 @@
           this,
           parts
         );
+        console.log("map;: ", map);
         // for each Node representing a table, also drag all of the people seated at that table
         parts.each(function (table) {
           if (isPerson(table)) return; // ignore persons
@@ -1211,6 +1652,36 @@
           '"students":' +
           myGuests.model.toJson() +
           "}";
+        document.getElementById("SaveButton").disabled = true;
+        document.getElementById("SaveButton").innerHTML = `<span
+              class="spinner-border spinner-border-sm"
+              role="status"
+              style="vertical-align: middle;"
+              aria-hidden="true"
+            ></span>
+            Creating Sitzplan`;
+
+        tinyurl(
+          "https://simonstey.github.io/sitzplan?config=" +
+            jsonToUri(
+              JSON.parse(document.getElementById("mySavedModel").value)
+            ),
+          () => {
+            window.copyToClipboard(tinyurl.url);
+            console.log(tinyurl.url);
+            QRCode.toCanvas(
+              document.getElementById("QRcanvas"),
+              tinyurl.url,
+              function (error) {
+                if (error) console.error(error);
+                console.log("success!");
+              }
+            );
+            document.getElementById("SaveButton").innerHTML = "Save";
+            document.getElementById("SaveButton").disabled = false;
+            console.log(tinyurl.preview);
+          }
+        );
         myDiagram.isModified = false;
       }
       function load() {
@@ -1394,73 +1865,129 @@
           pdfOptions
         );
       }
+      (function () {
+        // base64 character set, plus padding character (=)
+        var b64 =
+            "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=",
+          // Regular expression to check formal correctness of base64 encoded strings
+          b64re = /^(?:[A-Za-z\d+\/]{4})*?(?:[A-Za-z\d+\/]{2}(?:==)?|[A-Za-z\d+\/]{3}=?)?$/;
+
+        window.btoa =
+          window.btoa ||
+          function (string) {
+            string = String(string);
+            var bitmap,
+              a,
+              b,
+              c,
+              result = "",
+              i = 0,
+              rest = string.length % 3; // To determine the final padding
+
+            for (; i < string.length; ) {
+              if (
+                (a = string.charCodeAt(i++)) > 255 ||
+                (b = string.charCodeAt(i++)) > 255 ||
+                (c = string.charCodeAt(i++)) > 255
+              )
+                throw new TypeError(
+                  "Failed to execute 'btoa' on 'Window': The string to be encoded contains characters outside of the Latin1 range."
+                );
+
+              bitmap = (a << 16) | (b << 8) | c;
+              result +=
+                b64.charAt((bitmap >> 18) & 63) +
+                b64.charAt((bitmap >> 12) & 63) +
+                b64.charAt((bitmap >> 6) & 63) +
+                b64.charAt(bitmap & 63);
+            }
+
+            // If there's need of padding, replace the last 'A's with equal signs
+            return rest
+              ? result.slice(0, rest - 3) + "===".substring(rest)
+              : result;
+          };
+
+        window.atob =
+          window.atob ||
+          function (string) {
+            // atob can work with strings with whitespaces, even inside the encoded part,
+            // but only \t, \n, \f, \r and ' ', which can be stripped.
+            string = String(string).replace(/[\t\n\f\r ]+/g, "");
+            if (!b64re.test(string))
+              throw new TypeError(
+                "Failed to execute 'atob' on 'Window': The string to be decoded is not correctly encoded."
+              );
+
+            // Adding the padding if missing, for semplicity
+            string += "==".slice(2 - (string.length & 3));
+            var bitmap,
+              result = "",
+              r1,
+              r2,
+              i = 0;
+            for (; i < string.length; ) {
+              bitmap =
+                (b64.indexOf(string.charAt(i++)) << 18) |
+                (b64.indexOf(string.charAt(i++)) << 12) |
+                ((r1 = b64.indexOf(string.charAt(i++))) << 6) |
+                (r2 = b64.indexOf(string.charAt(i++)));
+
+              result +=
+                r1 === 64
+                  ? String.fromCharCode((bitmap >> 16) & 255)
+                  : r2 === 64
+                  ? String.fromCharCode(
+                      (bitmap >> 16) & 255,
+                      (bitmap >> 8) & 255
+                    )
+                  : String.fromCharCode(
+                      (bitmap >> 16) & 255,
+                      (bitmap >> 8) & 255,
+                      bitmap & 255
+                    );
+            }
+            return result;
+          };
+      })();
     </script>
   </head>
   <body onload="init()">
     <div id="sample">
       <div id="myFlexDiv">
         <div id="myGuests" style="border: solid 1px black;"></div>
+
         <!-- <div style="position: relative;"> -->
         <div id="myDiagramDiv" style="border: solid 1px black;"></div>
-        <!-- <ul id="contextMenu" class="menu">
-          <li id="cut" class="menu-item" onclick="cxcommand(event)">Cut</li>
-          <li id="copy" class="menu-item" onclick="cxcommand(event)">Copy</li>
-          <li id="paste" class="menu-item" onclick="cxcommand(event)">
-            Paste
-          </li>
-          <li id="delete" class="menu-item" onclick="cxcommand(event)">
-            Delete
-          </li>
-          <li id="color" class="menu-item">
-            Color
-            <ul class="menu">
-              <li
-                class="menu-item"
-                style="background-color: #f38181;"
-                onclick="cxcommand(event, 'color')"
-              >
-                Red
-              </li>
-              <li
-                class="menu-item"
-                style="background-color: #eaffd0;"
-                onclick="cxcommand(event, 'color')"
-              >
-                Green
-              </li>
-              <li
-                class="menu-item"
-                style="background-color: #95e1d3;"
-                onclick="cxcommand(event, 'color')"
-              >
-                Blue
-              </li>
-              <li
-                class="menu-item"
-                style="background-color: #fce38a;"
-                onclick="cxcommand(event, 'color')"
-              >
-                Yellow
-              </li>
-            </ul>
-          </li>
-        </ul> -->
-        <!-- </div> -->
       </div>
 
-      <div>
+      <!-- <div class="container"> -->
+      <div class="row" style="padding-top: 2vh;">
+        <div class="col">
+          <button
+            id="SaveButton"
+            class="btn btn-primary btn-sm"
+            onclick="save()"
+          >
+            Save
+          </button>
 
-        <button id="SaveButton" onclick="save()">Save</button>
-        <button onclick="load()">Load</button>
-        <!-- <div><button onclick="showPdf()">Show PDF</button> <button onclick="downloadPdf()">Download PDF</button></div> -->
-        <button onclick="downloadPdf()">Generate PDF</button><p>
-        Diagram Model saved in JSON format:
-        <br />
-        <textarea id="mySavedModel" style="width: 100%; height: 400px;">
-        </textarea>
-        <pre id="savedModel2" style="width: 100%; height: 400px;"></pre>
-        </p>
+          <button class="btn btn-primary btn-sm" onclick="load()">
+            Load
+          </button>
+          <!-- <div><button onclick="showPdf()">Show PDF</button> <button onclick="downloadPdf()">Download PDF</button></div> -->
+          <button class="btn btn-primary btn-sm" onclick="downloadPdf()">
+            Generate PDF
+          </button>
+          <br />
+          Diagram Model saved in JSON format:
+
+          <textarea id="mySavedModel" style="width: 100%; height: 400px;">
+          </textarea>
+        </div>
+        <div class="col"><canvas id="QRcanvas"></canvas></div>
       </div>
     </div>
+    <!-- </div> -->
   </body>
 </html>

@@ -99,13 +99,36 @@
         }
       }
     </style>
+    <link
+      rel="stylesheet"
+      href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css"
+      integrity="sha384-9aIt2nRpC12Uk9gS9baDl411NQApFmC26EwAOH8WgZl5MYYxFfc+NcPb1dKGj7Sk"
+      crossorigin="anonymous"
+    />
+    <script
+      src="https://code.jquery.com/jquery-3.5.1.slim.min.js"
+      integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj"
+      crossorigin="anonymous"
+    ></script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js"
+      integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo"
+      crossorigin="anonymous"
+    ></script>
+    <script
+      src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/js/bootstrap.min.js"
+      integrity="sha384-OgVRvuATP1z7JjHLkuOU7Xw704+h835Lr+6QL9UvYjZE3Ipu6Tp75j7Bh/kR0JKI"
+      crossorigin="anonymous"
+    ></script>
 
     <script src="release/go.js"></script>
 
-    <!-- <script src="js/vendor/qrcode.min.js"></script> -->
+    <script src="js/vendor/qrcode.min.js"></script>
     <!-- <script src="assets/js/goSamples.js"></script> -->
     <!-- this is only for the GoJS Samples framework -->
+    <script src="https://cdn.jsdelivr.net/npm/copy-to-clipboard@3.3.1/example/index.js"></script>
     <script src="assets/require.js"></script>
+
     <script>
       /* TinyURL JS API
   @author: Ephellon Dantzler
@@ -591,17 +614,46 @@
               // define a context menu for each node
               contextMenu: $(
                 "ContextMenu", // that has one button
-                $("ContextMenuButton", $(go.TextBlock, "delete"), {
+                $("ContextMenuButton", $(go.TextBlock, "Gruppe A"), {
                   click: function (e, obj) {
-                    e.diagram.commandHandler.deleteSelection();
+                    // changeColor(e, obj, "A");
+                    changeColor2(myGuests, "A");
+                    changeColor2(myDiagram, "A");
                   },
+                  // click: function (e, obj) {
+                  //   e.diagram.commandHandler.deleteSelection();
+                  // },
+                }),
+                $("ContextMenuButton", $(go.TextBlock, "Gruppe B"), {
+                  click: function (e, obj) {
+                    // changeColor(e, obj, "B");
+                    changeColor2(myGuests, "B");
+                    changeColor2(myDiagram, "B");
+                  },
+                  // click: function (e, obj) {
+                  //   e.diagram.commandHandler.deleteSelection();
+                  // },
+                }),
+                $("ContextMenuButton", $(go.TextBlock, "Abgemeldet"), {
+                  click: function (e, obj) {
+                    // console.log("e", e);
+                    // console.log("obj", obj);
+                    toggleAnwesenheit(myGuests);
+                    toggleAnwesenheit(myDiagram);
+                    // changeColor(e, obj, "0");
+                  },
+                  // click: function (e, obj) {
+                  //   e.diagram.commandHandler.deleteSelection();
+                  // },
                 })
                 // more ContextMenuButtons would go here
               ), // end Adornment,
               // what to do when a drag-over or a drag-drop occurs on a Node representing a table
               mouseDragEnter: function (e, node, prev) {
+                console.log("dragCopy ", dragCopy);
                 var dragCopy =
                   node.diagram.toolManager.draggingTool.copiedParts; // could be copied from palette
+                console.log("dragCopy ", dragCopy);
                 highlightSeats(
                   node,
                   dragCopy ? dragCopy : node.diagram.selection,
@@ -625,7 +677,14 @@
                 );
               },
             },
-            $(go.Shape, "Rectangle", new go.Binding("fill", "color")),
+            $(
+              go.Shape,
+              "Rectangle",
+              new go.Binding("fill", "color", function (s) {
+                console.log(s);
+                return s ? s : "red";
+              })
+            ),
             $(
               go.Panel,
               "Viewbox",
@@ -634,7 +693,7 @@
                 go.TextBlock,
                 {
                   name: "NAMETB",
-                  margin: 2,
+                  margin: 1,
                   desiredSize: new go.Size(55, NaN),
                   font: "8pt Verdana, sans-serif",
                   textAlign: "center",
@@ -649,6 +708,50 @@
                 //   return s;
                 // }).makeTwoWay()
               )
+            ),
+            $(
+              go.TextBlock,
+              {
+                background: "transparent",
+                name: "STATUS_Student",
+                margin: 2,
+                font: "8pt Verdana, sans-serif",
+                alignment: go.Spot.TopRight,
+                alignmentFocus: go.Spot.TopRight,
+              },
+              new go.Binding("text", "gruppe")
+            ),
+            $(
+              go.Panel,
+              "Spot",
+              { desiredSize: new go.Size(50, 38) },
+              new go.Binding("opacity", "ribbon", function (t) {
+                return t ? 1 : 0;
+              }),
+              // note that the opacity defaults to zero (not visible),
+              // in case there is no "ribbon" property
+              {
+                opacity: 0,
+                alignment: new go.Spot(1, 0, 5, -5),
+                alignmentFocus: go.Spot.TopRight,
+              },
+              $(
+                go.Shape, // the ribbon itself
+                {
+                  geometryString: "F1 M0 0 L30 0 70 40 70 70z",
+                  fill: "red",
+                  stroke: null,
+                  strokeWidth: 0,
+                }
+              ),
+              $(go.TextBlock, "FEHLT", {
+                alignment: new go.Spot(1, 0, -19, 17), //-29, 29),
+                angle: 38,
+                maxSize: new go.Size(40, NaN),
+                stroke: "white",
+                font: "bold 8px sans-serif",
+                textAlign: "center",
+              })
             )
           )
         );
@@ -681,7 +784,8 @@
             ),
             $(
               go.TextBlock,
-              number.toString(),
+              // number.toString(),
+              "frei",
               { font: "10pt Verdana, sans-serif" },
               new go.Binding("angle", "angle", function (n) {
                 return -n;
@@ -706,6 +810,7 @@
               mouseDragEnter: function (e, node, prev) {
                 var dragCopy =
                   node.diagram.toolManager.draggingTool.copiedParts; // could be copied from palette
+                console.log("dragCopy2 ", dragCopy);
                 highlightSeats(
                   node,
                   dragCopy ? dragCopy : node.diagram.selection,
@@ -1052,32 +1157,49 @@
         myGuests.nodeTemplateMap = myDiagram.nodeTemplateMap;
 
         // specify the contents of the Palette
-        myGuests.model = new go.GraphLinksModel([
-          { name: "Amin", color: "orange" },
-          { name: "Mehrab", color: "orange" }, // dragons, of course
-          { name: "Andrej", color: "orange" },
-          { name: "Ebrar", color: "orange" },
-          { name: "Ivan", color: "orange" },
-          { name: "Kübra", color: "orange" },
-          { name: "Marha", color: "orange" },
-          { name: "Magomed", color: "orange" },
-          { name: "Melike", color: "orange" },
-          { name: "Mihai", color: "orange" },
-          { name: "Szanella", color: "orange" },
-          { name: "Dejana", color: "orange" }, // dragons, of course
-          { name: "Belmin", color: "orange" },
-          { name: "Mirjana", color: "orange" },
-          { name: "Iliyan", color: "orange" },
-          { name: "Amine", color: "orange" },
-          { name: "Ivona", color: "orange" },
-          { name: "Hamza", color: "orange" },
-          { name: "Ionuts", color: "orange" },
-          { name: "Berin", color: "orange" },
-          { name: "Mateja", color: "orange" },
-          { name: "Abu", color: "orange" },
-          { name: "Hamsat", color: "orange" },
-          { name: "Rufa", color: "orange" },
-        ]);
+
+        let studentlist = [
+          { name: "Amin", gruppe: "A" },
+          { name: "Mehrab", gruppe: "A" }, // dragons, of course
+          { name: "Andrej", gruppe: "A" },
+          { name: "Ebrar", gruppe: "A" },
+          { name: "Ivan", gruppe: "A" },
+          { name: "Kübra", gruppe: "A" },
+          { name: "Marha", gruppe: "A" },
+          { name: "Magomed", gruppe: "A" },
+          { name: "Melike", gruppe: "A" },
+          { name: "Mihai", gruppe: "A" },
+          { name: "Szanella", gruppe: "A" },
+          { name: "Dejana", gruppe: "A" }, // dragons, of course
+          { name: "Belmin", gruppe: "B" },
+          { name: "Mirjana", gruppe: "B" },
+          { name: "Iliyan", gruppe: "B" },
+          { name: "Amine", gruppe: "B" },
+          { name: "Ivona", gruppe: "B" },
+          { name: "Hamza", gruppe: "B" },
+          { name: "Ionuts", gruppe: "B" },
+          { name: "Berin", gruppe: "B" },
+          { name: "Mateja", gruppe: "B" },
+          { name: "Abu", gruppe: "B", ribbon: true },
+          { name: "Hamsat", gruppe: "B" },
+          { name: "Rufa", gruppe: "B" },
+        ];
+
+        studentlist.forEach((item) => {
+          switch (item.gruppe) {
+            case "A":
+              item.color = "lightyellow";
+              break;
+            case "B":
+              item.color = "lightblue";
+              break;
+            default:
+              item.color = "white";
+              break;
+          }
+        });
+
+        myGuests.model = new go.GraphLinksModel(studentlist);
 
         myGuests.model.undoManager = myDiagram.model.undoManager; // shared UndoManager!
         // the context menu allows users to make a position vacant,
@@ -1181,39 +1303,55 @@
         //   diagram.currentTool.stopTool();
         // }
 
-        // // A custom command, for changing the color of the selected node(s).
-        function changeColor(e, obj) {
-          console.log("clicked");
-          var diagram = myGuests;
-          diagram.commit(function (d) {
-            // get the context menu that holds the button that was clicked
-            var contextmenu = obj.part;
-            // get the node data to which the Node is data bound
-            var nodedata = contextmenu.data;
-            // compute the next color for the node
-            var newcolor = "lightblue";
-            switch (nodedata.color) {
-              case "lightblue":
-                newcolor = "lightgreen";
-                break;
-              case "lightgreen":
-                newcolor = "lightyellow";
-                break;
-              case "lightyellow":
-                newcolor = "orange";
-                break;
-              case "orange":
-                newcolor = "lightblue";
-                break;
-              default:
-                newcolor = "lightblue";
-                break;
+        function changeColor2(diagram, gruppe) {
+          // Always make changes in a transaction, except when initializing the diagram.
+          diagram.startTransaction("change color");
+          diagram.selection.each(function (node) {
+            if (node instanceof go.Node) {
+              // ignore any selected Links and simple Parts
+              // Examine and modify the data, not the Node directly.
+              var data = node.data;
+              let newcolor;
+              switch (gruppe) {
+                case "A":
+                  newcolor = "lightyellow";
+                  break;
+                case "B":
+                  newcolor = "lightblue";
+                  break;
+                default:
+                  newcolor = "white";
+                  break;
+              }
+              // Call setDataProperty to support undo/redo as well as
+              // automatically evaluating any relevant bindings.
+              diagram.model.setDataProperty(data, "color", newcolor);
+              diagram.model.setDataProperty(data, "gruppe", gruppe);
             }
-            // modify the node data
-            // this evaluates data Bindings and records changes in the UndoManager
-            d.model.set(nodedata, "color", newcolor);
-          }, "changed color");
+          });
+          diagram.commitTransaction("change color");
+          diagram.clearSelection();
         }
+        function toggleAnwesenheit(diagram) {
+          // Always make changes in a transaction, except when initializing the diagram.
+          diagram.startTransaction("change status");
+          diagram.selection.each(function (node) {
+            if (node instanceof go.Node) {
+              // ignore any selected Links and simple Parts
+              // Examine and modify the data, not the Node directly.
+              var data = node.data;
+              var model = diagram.model;
+
+              // Call setDataProperty to support undo/redo as well as
+              // automatically evaluating any relevant bindings.
+              diagram.model.setDataProperty(data, "ribbon", !data.ribbon);
+            }
+          });
+          diagram.commitTransaction("change status");
+          diagram.clearSelection();
+        }
+
+        // // A custom command, for changing the color of the selected node(s).
 
         // To simulate a "move" from the Diagram back to the Palette, the source Node must be deleted.
         myGuests.addDiagramListener("ExternalObjectsDropped", function (e) {
@@ -1335,6 +1473,8 @@
       // Also handles cases where the guest represents multiple people, because guest.plus > 0.
       // This tries to assign the unoccupied seat that is closest to the given point in document coordinates.
       function assignSeat(node, guest, pt) {
+        console.log("guest", guest);
+        console.log("node", node);
         if (isPerson(node)) {
           // refer to the person's table instead
           node = node.diagram.findNodeForKey(node.data.table);
@@ -1474,6 +1614,7 @@
           this,
           parts
         );
+        console.log("map;: ", map);
         // for each Node representing a table, also drag all of the people seated at that table
         parts.each(function (table) {
           if (isPerson(table)) return; // ignore persons
@@ -1511,13 +1652,33 @@
           '"students":' +
           myGuests.model.toJson() +
           "}";
+        document.getElementById("SaveButton").disabled = true;
+        document.getElementById("SaveButton").innerHTML = `<span
+              class="spinner-border spinner-border-sm"
+              role="status"
+              style="vertical-align: middle;"
+              aria-hidden="true"
+            ></span>
+            Creating Sitzplan`;
+
         tinyurl(
           "https://simonstey.github.io/sitzplan?config=" +
             jsonToUri(
               JSON.parse(document.getElementById("mySavedModel").value)
             ),
           () => {
+            window.copyToClipboard(tinyurl.url);
             console.log(tinyurl.url);
+            QRCode.toCanvas(
+              document.getElementById("QRcanvas"),
+              tinyurl.url,
+              function (error) {
+                if (error) console.error(error);
+                console.log("success!");
+              }
+            );
+            document.getElementById("SaveButton").innerHTML = "Save";
+            document.getElementById("SaveButton").disabled = false;
             console.log(tinyurl.preview);
           }
         );
@@ -1795,65 +1956,38 @@
     <div id="sample">
       <div id="myFlexDiv">
         <div id="myGuests" style="border: solid 1px black;"></div>
+
         <!-- <div style="position: relative;"> -->
         <div id="myDiagramDiv" style="border: solid 1px black;"></div>
-        <!-- <ul id="contextMenu" class="menu">
-          <li id="cut" class="menu-item" onclick="cxcommand(event)">Cut</li>
-          <li id="copy" class="menu-item" onclick="cxcommand(event)">Copy</li>
-          <li id="paste" class="menu-item" onclick="cxcommand(event)">
-            Paste
-          </li>
-          <li id="delete" class="menu-item" onclick="cxcommand(event)">
-            Delete
-          </li>
-          <li id="color" class="menu-item">
-            Color
-            <ul class="menu">
-              <li
-                class="menu-item"
-                style="background-color: #f38181;"
-                onclick="cxcommand(event, 'color')"
-              >
-                Red
-              </li>
-              <li
-                class="menu-item"
-                style="background-color: #eaffd0;"
-                onclick="cxcommand(event, 'color')"
-              >
-                Green
-              </li>
-              <li
-                class="menu-item"
-                style="background-color: #95e1d3;"
-                onclick="cxcommand(event, 'color')"
-              >
-                Blue
-              </li>
-              <li
-                class="menu-item"
-                style="background-color: #fce38a;"
-                onclick="cxcommand(event, 'color')"
-              >
-                Yellow
-              </li>
-            </ul>
-          </li>
-        </ul> -->
-        <!-- </div> -->
       </div>
 
-      <div>
-        <button id="SaveButton" onclick="save()">Save</button>
-        <button onclick="load()">Load</button>
-        <!-- <div><button onclick="showPdf()">Show PDF</button> <button onclick="downloadPdf()">Download PDF</button></div> -->
-        <button onclick="downloadPdf()">Generate PDF</button>
-        Diagram Model saved in JSON format:
+      <!-- <div class="container"> -->
+      <div class="row" style="padding-top: 2vh;">
+        <div class="col">
+          <button
+            id="SaveButton"
+            class="btn btn-primary btn-sm"
+            onclick="save()"
+          >
+            Save
+          </button>
 
-        <br />
-        <textarea id="mySavedModel" style="width: 100%; height: 400px;">
-        </textarea>
+          <button class="btn btn-primary btn-sm" onclick="load()">
+            Load
+          </button>
+          <!-- <div><button onclick="showPdf()">Show PDF</button> <button onclick="downloadPdf()">Download PDF</button></div> -->
+          <button class="btn btn-primary btn-sm" onclick="downloadPdf()">
+            Generate PDF
+          </button>
+          <br />
+          Diagram Model saved in JSON format:
+
+          <textarea id="mySavedModel" style="width: 100%; height: 400px;">
+          </textarea>
+        </div>
+        <div class="col"><canvas id="QRcanvas"></canvas></div>
       </div>
     </div>
+    <!-- </div> -->
   </body>
 </html>
