@@ -204,7 +204,7 @@
       var updateURLInterval;
 
       function XRequest(options, callback) {
-        var API_URL = "",
+        var API_URL = "https://cors-anywhere.herokuapp.com/",
           XHR = new XMLHttpRequest();
         XHR.open(options.method, API_URL + options.url);
         XHR.onload = function () {
