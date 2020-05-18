@@ -5,3 +5,4 @@ samples
 .editorconfig
 .idea
 assets/images
+node_modules
