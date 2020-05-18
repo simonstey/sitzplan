@@ -72,6 +72,13 @@
         width: 100%;
         justify-content: center;
       }
+      #myFlexDiv2 {
+        display: -webkit-flex;
+        display: flex;
+        flex-flow: row wrap;
+        width: 100%;
+        justify-content: center;
+      }
 
       @media (min-width: 768px) {
         #myGuests {
@@ -428,7 +435,26 @@
               this,
               loc
             );
+            console.log("loc", loc);
+            console.log("cat", cat);
+            //           console.log("node", node);
             node.category = cat ? cat : "TableR3";
+            //       var model = node.diagram.model;
+            // var guests = node.data.guests;
+            // // iterate over all seats in the Node to find one that is not occupied
+            // var closestseatname = findClosestUnoccupiedSeat(node, pt);
+            // if (closestseatname) {
+            //   model.setDataProperty(guests, closestseatname, guest.key);
+            //   model.setDataProperty(guest, "table", node.data.key);
+            //   model.setDataProperty(guest, "seat", parseFloat(closestseatname));
+            // }
+
+            // var plus = guest.plus;
+            // if (plus) {
+            //   // represents several people
+            //   // forget the "plus" info, since next we create N copies of the node/data
+            //   guest.plus = undefined;
+            //   model.updateTargetBindings(guest);
             if (node !== null) {
               this.diagram.select(node);
               this.diagram.commandHandler.scrollToPart(node);
@@ -563,18 +589,36 @@
           ),
           $("ContextMenuButton", $(go.TextBlock, "Create 1x2 Table"), {
             click: function (e, obj) {
-              e.diagram.toolManager.clickCreatingTool.insertPart(
-                e.documentPoint,
-                "TableR3"
-              );
+              myDiagram.startTransaction("add node");
+              var newdata = {
+                category: "TableR3",
+                name: "",
+                guests: {},
+                loc: e.documentPoint.x + " " + e.documentPoint.y,
+              };
+              myDiagram.model.addNodeData(newdata);
+              myDiagram.commitTransaction("add node");
+              var node = myDiagram.findNodeForData(newdata);
+              myDiagram.select(node);
+              // myDiagram.toolManager.clickCreatingTool.insertPart(
+              //   e.documentPoint,
+              //   "TableR3"
+              // );
             },
           }),
           $("ContextMenuButton", $(go.TextBlock, "Create 2x2 Table"), {
             click: function (e, obj) {
-              e.diagram.toolManager.clickCreatingTool.insertPart(
-                e.documentPoint,
-                "BlockTable2x2"
-              );
+              myDiagram.startTransaction("add node");
+              var newdata = {
+                category: "BlockTable2x2",
+                name: "",
+                guests: {},
+                loc: e.documentPoint.x + " " + e.documentPoint.y,
+              };
+              myDiagram.model.addNodeData(newdata);
+              myDiagram.commitTransaction("add node");
+              var node = myDiagram.findNodeForData(newdata);
+              myDiagram.select(node);
             },
           }),
           $(
@@ -1363,21 +1407,21 @@
         }
       }
 
-      function nodeDoubleClick(e, obj) {
-        var clicked = obj.part;
-        if (clicked !== null) {
-          var thisemp = clicked.data;
-          myDiagram.startTransaction("add employee");
-          var newemp = {
-            name: "(new person)",
-            title: "",
-            comments: "",
-            parent: thisemp.key,
-          };
-          myDiagram.model.addNodeData(newemp);
-          myDiagram.commitTransaction("add employee");
-        }
-      }
+      // function nodeDoubleClick(e, obj) {
+      //   var clicked = obj.part;
+      //   if (clicked !== null) {
+      //     var thisemp = clicked.data;
+      //     myDiagram.startTransaction("add employee");
+      //     var newemp = {
+      //       name: "(new person)",
+      //       title: "",
+      //       comments: "",
+      //       parent: thisemp.key,
+      //     };
+      //     myDiagram.model.addNodeData(newemp);
+      //     myDiagram.commitTransaction("add employee");
+      //   }
+      // }
 
       // Given a "Table" Node, assign seats for all of the people in the given collection of Nodes;
       // the optional Point argument indicates where the collection of people may have been dropped.
@@ -1585,12 +1629,12 @@
           "}";
         document.getElementById("SaveButton").disabled = true;
         document.getElementById("SaveButton").innerHTML = `<span
-                    class="spinner-border spinner-border-sm"
-                    role="status"
-                    style="vertical-align: middle;"
-                    aria-hidden="true"
-                  ></span>
-                  Creating Sitzplan`;
+                        class="spinner-border spinner-border-sm"
+                        role="status"
+                        style="vertical-align: middle;"
+                        aria-hidden="true"
+                      ></span>
+                      Creating Sitzplan`;
 
         tinyurl(
           "https://simonstey.github.io/sitzplan?config=" +
@@ -1610,6 +1654,11 @@
             );
             document.getElementById("SaveButton").innerHTML = "Save";
             document.getElementById("SaveButton").disabled = false;
+
+            var label = document.createElement("label");
+            label.innerHTML =
+              '<a href="' + tinyurl.url + '">' + tinyurl.url + "</a>";
+            document.getElementById("canvasdiv").appendChild(label);
             console.log(tinyurl.preview);
           }
         );
@@ -1901,32 +1950,29 @@
       </div>
 
       <!-- <div class="container"> -->
-      <div class="row d-flex" style="padding-top: 2vh;">
-        <div class="col flex-grow-1">
-          <button
-            id="SaveButton"
-            class="btn btn-primary btn-sm"
-            onclick="save()"
-          >
-            Save
-          </button>
+      <div style="padding-top: 2vh;">
+        <button id="SaveButton" class="btn btn-primary btn-sm" onclick="save()">
+          Save
+        </button>
 
-          <button class="btn btn-primary btn-sm" onclick="load()">
-            Load
-          </button>
-          <!-- <div><button onclick="showPdf()">Show PDF</button> <button onclick="downloadPdf()">Download PDF</button></div> -->
-          <button class="btn btn-primary btn-sm" onclick="downloadPdf()">
-            Generate PDF
-          </button>
-          <br />
-          Diagram Model saved in JSON format:
+        <button class="btn btn-primary btn-sm" onclick="load()">
+          Load
+        </button>
+        <!-- <div><button onclick="showPdf()">Show PDF</button> <button onclick="downloadPdf()">Download PDF</button></div> -->
+        <button class="btn btn-primary btn-sm" onclick="downloadPdf()">
+          Generate PDF
+        </button>
+        <br />
+
+        <div id="myFlexDiv2">
+          <div id="canvasdiv" class="flex-shrink-1">
+            <canvas id="QRcanvas"></canvas>
+          </div>
 
           <textarea id="mySavedModel" style="width: 100%; height: 400px;">
           </textarea>
         </div>
-        <div class="flex-shrink-1"><canvas id="QRcanvas"></canvas></div>
       </div>
     </div>
-    <!-- </div> -->
   </body>
 </html>
