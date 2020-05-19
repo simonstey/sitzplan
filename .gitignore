@@ -6,3 +6,10 @@ samples
 .idea
 assets/images
 node_modules
+/index_test.html
+release
+/browserconfig.xml
+/.htaccess
+/minimalPDF.html
+/site.webmanifest
+/robots.txt
