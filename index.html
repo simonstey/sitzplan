@@ -1736,14 +1736,22 @@
           layout: layout,
         };
 
-        require(["blob-stream", "pdfkit"], function (blobStream, PDFDocument) {
+        require(["./js/vendor/blob-stream", "./js/vendor/pdfkit"], function (
+          blobStream,
+          PDFDocument
+        ) {
           var doc = new PDFDocument(pageOptions);
           var stream = doc.pipe(blobStream());
           var bnds = diagram.documentBounds;
 
           // add some descriptive text
-          //doc.text(diagram.nodes.count + " nodes, " + diagram.links.count + " links  Diagram size: " + bnds.width.toFixed(2) + " x " + bnds.height.toFixed(2));
 
+          if (document.getElementById("canvasdiv").innerText.length > 1) {
+            doc.text(document.getElementById("canvasdiv").innerText);
+            doc.image(
+              document.getElementById("QRcanvas").toDataURL("image/jpeg")
+            );
+          }
           var db = diagram.documentBounds
             .copy()
             .subtractMargin(diagram.padding)
@@ -1776,8 +1784,10 @@
               makeOptions.maxSize = new go.Size(Infinity, Infinity);
 
               var imgdata = diagram.makeImageData(makeOptions);
+
               doc.image(imgdata, {
-                scale: 1 / ((imgResolutionFactor * 96) / 72),
+                align: "center",
+                valign: "center",
               });
             }
           }
@@ -1798,6 +1808,7 @@
           showTemporary: true, // default is false
           layout: "landscape", // instead of "portrait"
           pageSize: "A4", // instead of "LETTER"
+          imgResolutionFactor: 1,
         };
 
       function showPdf() {
