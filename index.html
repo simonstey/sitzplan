@@ -140,6 +140,7 @@
     />
 
     <script src="js/vendor/qrcode.min.js"></script>
+    <!-- <script src="js/vendor/asd.js"></script> -->
     <!-- <script src="assets/js/goSamples.js"></script> -->
     <!-- this is only for the GoJS Samples framework -->
     <script src="https://cdn.jsdelivr.net/npm/copy-to-clipboard@3.3.1/example/index.js"></script>
@@ -1085,7 +1086,7 @@
         myDiagram.mouseDrop = function (e) {
           // when the selection is dropped in the diagram's background,
           // make sure the selected people no longer belong to any table
-          console.log(e.diagram);
+          // console.log(e.diagram);
           e.diagram.selection.each(function (n) {
             if (isPerson(n)) unassignSeat(n.data);
           });
@@ -1656,10 +1657,16 @@
             document.getElementById("SaveButton").disabled = false;
 
             var label = document.createElement("label");
+            label.id = "tinyurl";
             label.innerHTML =
               '<a href="' + tinyurl.url + '">' + tinyurl.url + "</a>";
-            document.getElementById("canvasdiv").appendChild(label);
-            console.log(tinyurl.preview);
+            if (document.getElementById("tinyurl")) {
+              document
+                .getElementById("canvasdiv")
+                .replaceChild(label, document.getElementById("tinyurl"));
+            } else {
+              document.getElementById("canvasdiv").appendChild(label);
+            }
           }
         );
         myDiagram.isModified = false;
@@ -1746,12 +1753,6 @@
 
           // add some descriptive text
 
-          if (document.getElementById("canvasdiv").innerText.length > 1) {
-            doc.text(document.getElementById("canvasdiv").innerText);
-            doc.image(
-              document.getElementById("QRcanvas").toDataURL("image/jpeg")
-            );
-          }
           var db = diagram.documentBounds
             .copy()
             .subtractMargin(diagram.padding)
@@ -1785,17 +1786,95 @@
 
               var imgdata = diagram.makeImageData(makeOptions);
 
-              doc.image(imgdata, {
-                align: "center",
-                valign: "center",
-              });
+              doc.image(imgdata, { width: pageWidth });
             }
           }
 
-          doc.end();
-          stream.on("finish", function () {
-            action(stream.toBlob("application/pdf"));
-          });
+          // var svg = myDiagram.makeSvg({
+          //   //document: newDocument, // create SVG DOM in new document context
+          //   scale: 3,
+          // });
+          // doc.addSVG(svg, 100, 100, {
+          //   "page-size": "A4",
+          //   dpi: 400,
+          //   "disable-smart-shrinking": "",
+          // });
+          // var svgstr = new XMLSerializer().serializeToString(svg);
+          // console.log(svgstr);
+          // var blob = new Blob([svgstr], { type: "image/svg+xml" });
+          // // newDocument.body.appendChild(svg);
+          // console.log(blob);
+          // doc.image(blob);
+
+          document.getElementById("mySavedModel").value =
+            '{\n "plan": ' +
+            myDiagram.model.toJson() +
+            ",\n" +
+            '"students":' +
+            myGuests.model.toJson() +
+            "}";
+          document.getElementById("SaveButton").disabled = true;
+          document.getElementById("SaveButton").innerHTML = `<span
+                        class="spinner-border spinner-border-sm"
+                        role="status"
+                        style="vertical-align: middle;"
+                        aria-hidden="true"
+                      ></span>
+                      Creating Sitzplan`;
+
+          tinyurl(
+            "https://simonstey.github.io/sitzplan?config=" +
+              jsonToUri(
+                JSON.parse(document.getElementById("mySavedModel").value)
+              ),
+            () => {
+              window.copyToClipboard(tinyurl.url);
+              console.log(tinyurl.url);
+              QRCode.toCanvas(
+                document.getElementById("QRcanvas"),
+                tinyurl.url,
+                function (error) {
+                  if (error) console.error(error);
+                  console.log("success!");
+                }
+              );
+              document.getElementById("SaveButton").innerHTML = "Save";
+              document.getElementById("SaveButton").disabled = false;
+
+              var label = document.createElement("label");
+              label.id = "tinyurl";
+              label.innerHTML =
+                '<a href="' + tinyurl.url + '">' + tinyurl.url + "</a>";
+              if (document.getElementById("tinyurl")) {
+                document
+                  .getElementById("canvasdiv")
+                  .replaceChild(label, document.getElementById("tinyurl"));
+              } else {
+                document.getElementById("canvasdiv").appendChild(label);
+              }
+              doc.addPage();
+              doc
+                .fontSize(25)
+                .fillColor("blue")
+                .text(document.getElementById("canvasdiv").innerText, 20, 20);
+
+              // Measure the text
+              const width = doc.widthOfString(
+                document.getElementById("canvasdiv").innerText
+              );
+              const height = doc.currentLineHeight();
+
+              doc.image(
+                document.getElementById("QRcanvas").toDataURL("image/jpeg")
+              );
+
+              doc.end();
+              stream.on("finish", function () {
+                action(stream.toBlob("application/pdf"));
+              });
+            }
+          );
+          myDiagram.isModified = false;
         });
       }
 
@@ -1808,7 +1887,6 @@
           showTemporary: true, // default is false
           layout: "landscape", // instead of "portrait"
           pageSize: "A4", // instead of "LETTER"
-          imgResolutionFactor: 1,
         };
 
       function showPdf() {
